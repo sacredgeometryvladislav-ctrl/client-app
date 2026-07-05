@@ -1,0 +1,9 @@
+{
+  "name": "Записи клиентов",
+  "short_name": "Записи",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f8f8f8",
+  "theme_color": "#000000",
+  "icons": []
+}
