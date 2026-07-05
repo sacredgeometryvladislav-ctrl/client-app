@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>Записи клиентов</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background: #f8f8f8; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; color: #111; }
+        input, select, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; }
+        button { background: #000; color: white; font-weight: bold; border: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 12px; overflow: hidden; }
+        th, td { padding: 14px; text-align: left; border-bottom: 1px solid #eee; }
+        .search { padding: 12px; width: 100%; border-radius: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Запись на сеанс</h1>
+        <input type="text" id="name" placeholder="Имя клиента" required>
+        <input type="tel" id="phone" placeholder="Телефон (+7...)" required>
+        <select id="service">
+            <option value="Консультация">Консультация</option>
+            <option value="Мини-тату">Мини-тату</option>
+            <option value="Татуировка">Татуировка</option>
+            <option value="Коррекция">Коррекция</option>
+        </select>
+        <input type="datetime-local" id="datetime" required>
+        <button onclick="addRecord()">Записать клиента</button>
+        <button onclick="exportData()" style="background:#666;">Экспорт базы</button>
+
+        <h2 style="margin-top:30px;">Записи</h2>
+        <input type="text" id="search" class="search" placeholder="Поиск по имени или телефону" onkeyup="filterRecords()">
+
+        <table id="recordsTable">
+            <thead>
+                <tr><th>Дата</th><th>Клиент</th><th>Услуга</th><th>Телефон</th><th>Статус</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        let records = JSON.parse(localStorage.getItem('clientRecords')) || [];
+
+        function renderTable(filtered = records) {
+            const tbody = document.querySelector('#recordsTable tbody');
+            tbody.innerHTML = '';
+            filtered.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
+            filtered.forEach((r, i) => {
+                const tr = document.createElement('tr');
+                const date = new Date(r.datetime);
+                tr.innerHTML = `
+                    <td>${date.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
+                    <td>${r.name}</td>
+                    <td>${r.service}</td>
+                    <td>${r.phone}</td>
+                    <td><button onclick="toggleStatus(${i})" style="background:${r.done ? '#28a745' : '#ffc107'}; color:white; padding:6px 10px; border:none; border-radius:8px;">${r.done ? '✓ Выполнено' : 'В работе'}</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addRecord() {
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const service = document.getElementById('service').value;
+            const datetime = document.getElementById('datetime').value;
+            if (!name || !phone || !datetime) { alert("Заполни имя, телефон и дату!"); return; }
+            records.push({ name, phone, service, datetime, done: false });
+            localStorage.setItem('clientRecords', JSON.stringify(records));
+            renderTable();
+            document.getElementById('name').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('datetime').value = '';
+        }
+
+        function toggleStatus(index) {
+            records[index].done = !records[index].done;
+            localStorage.setItem('clientRecords', JSON.stringify(records));
+            renderTable();
+        }
+
+        function filterRecords() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const filtered = records.filter(r => r.name.toLowerCase().includes(query) || r.phone.includes(query));
+            renderTable(filtered);
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(records, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const link = document.createElement('a');
+            link.href = dataUri;
+            link.download = 'clients_backup.json';
+            link.click();
+        }
+
+        renderTable();
+    </script>
+</body>
+</html>
